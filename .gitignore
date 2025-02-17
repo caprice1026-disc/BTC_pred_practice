@@ -170,3 +170,4 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 funding_rates.csv
+long_short_ratio.csv
