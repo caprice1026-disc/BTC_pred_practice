@@ -171,3 +171,4 @@ cython_debug/
 .pypirc
 funding_rates.csv
 long_short_ratio.csv
+open_interest.csv

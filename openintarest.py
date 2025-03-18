@@ -4,7 +4,7 @@ import time
 from datetime import datetime
 
 # セッション作成（テストネットの場合は testnet=True を設定）
-session = HTTP(testnet=True)
+session = HTTP(testnet=False)
 
 # 設定
 CATEGORY = "linear"         # USDT契約の場合。逆指値の場合は "inverse" に変更
@@ -14,8 +14,8 @@ CSV_FILE = "open_interest.csv"
 
 # ※オープンインタレストのデータは比較的新しい期間のみ取得可能な場合があるため、
 # ここでは例として 2023-09-30～2023-10-03 の期間を指定しています。
-start_date = datetime(2023, 9, 30)
-end_date   = datetime(2023, 10, 3)
+start_date = datetime(2020, 4, 1)
+end_date   = datetime(2024, 12, 1)
 start_ts = int(start_date.timestamp() * 1000)
 end_ts   = int(end_date.timestamp() * 1000)
 
