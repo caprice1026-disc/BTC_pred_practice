@@ -54,7 +54,7 @@ def fetch_klines(symbol="BTCUSDT", category="linear", interval="60",
             print(f"[KLINE] ページング更新できず (current_start={current_start}, new_start={new_start})。ループ終了します。")
             break
         current_start = new_start
-        time.sleep(0.1)  # レート制限対策
+        time.sleep(1)  # レート制限対策
 
     return all_data
 
