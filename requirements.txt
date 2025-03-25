@@ -1,0 +1,6 @@
+# 実行しているpythonのバージョンは3.10.9
+
+requests
+pandas
+numpy
+pybit

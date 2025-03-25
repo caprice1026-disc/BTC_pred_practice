@@ -5,6 +5,10 @@ from datetime import datetime, timedelta
 import time
 from pybit.unified_trading import HTTP  # 資金調達率、オープンインタレスト取得用
 
+# OI追加部分に関しては怪しいので明日レビューし直すこと
+# requestsライブラリとPythonのver3.10以上のバージョンは互換性がなかったような気がするので要確認
+# 具体的にはUbuntuで実行時に証明書エラーが発生していた気がする
+
 # -------------------------------
 # 1. 1時間足ローソク足データ取得 (Klines)
 # -------------------------------
@@ -58,6 +62,7 @@ def fetch_daily_klines(symbol="BTCUSDT", category="linear", interval="D",
                          total_days=60, limit=1000,
                          url="https://api.bybit.com/v5/market/kline"):
     '''指定期間(total_days)分の日足ローソク足データをページング対応で取得する関数'''
+    # utcnowが非推奨になった理由と代替メソッドを調べておく
     end_time = datetime.utcnow()
     start_time = end_time - timedelta(days=total_days)
     end_timestamp = int(end_time.timestamp() * 1000)
