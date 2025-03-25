@@ -16,6 +16,7 @@ def fetch_klines(symbol="BTCUSDT", category="linear", interval="60",
                  total_days=60, limit=1000,
                  url="https://api.bybit.com/v5/market/kline"):
     '''指定期間(total_days)分の1時間足ローソク足データをページング対応で取得する関数'''
+    # utcnowが非推奨になった理由と代替メソッドを調べておく
     end_time = datetime.utcnow()
     start_time = end_time - timedelta(days=total_days)
     end_timestamp = int(end_time.timestamp() * 1000)
@@ -62,7 +63,6 @@ def fetch_daily_klines(symbol="BTCUSDT", category="linear", interval="D",
                          total_days=60, limit=1000,
                          url="https://api.bybit.com/v5/market/kline"):
     '''指定期間(total_days)分の日足ローソク足データをページング対応で取得する関数'''
-    # utcnowが非推奨になった理由と代替メソッドを調べておく
     end_time = datetime.utcnow()
     start_time = end_time - timedelta(days=total_days)
     end_timestamp = int(end_time.timestamp() * 1000)
@@ -268,8 +268,8 @@ def fetch_open_interest_data(symbol="BTCUSDT", category="linear", interval="1h",
 # -------------------------------
 def main():
     '''
-    1時間足と日足、及び8時間ごとの資金調達率を取得し、テクニカル指標計算およびmerge_asofや線形補間で統合、
-    1時間単位の最終データセットとしてCSVに出力する。
+    1時間足と日足、及び8時間ごとの資金調達率、さらに1時間足のオープンインタレストデータを取得し、
+    テクニカル指標計算およびmerge_asofや線形補間で統合し、1時間単位の最終データセットとしてCSVに出力する。
     '''
     total_days = 60  # 60日分のデータ
     symbol = "BTCUSDT"
@@ -314,7 +314,8 @@ def main():
     funding_records = fetch_funding_rate_history_custom(symbol=symbol, total_days=total_days)
     if funding_records:
         df_funding = pd.DataFrame(funding_records)
-        df_funding["time"] = pd.to_datetime(df_funding["timestamp"].astype(int), unit="ms")
+        # 修正：フィールド名は "fundingRateTimestamp" を使用する
+        df_funding["time"] = pd.to_datetime(df_funding["fundingRateTimestamp"].astype(int), unit="ms")
         df_funding.drop_duplicates(subset=["time"], inplace=True)
         df_funding.set_index("time", inplace=True)
         # 1時間足にリサンプリングし、線形補間
