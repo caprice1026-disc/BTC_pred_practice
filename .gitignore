@@ -172,3 +172,7 @@ cython_debug/
 funding_rates.csv
 long_short_ratio.csv
 open_interest.csv
+raw_data.csv
+data_with_indicators_daily.csv
+data_with_indicators.csv
+raw_data_daily.csv
