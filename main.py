@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 import time
-from pybit.unified_trading import HTTP  # 資金調達率、ロングショートレシオ取得用
+from pybit.unified_trading import HTTP  # 資金調達率、オープンインタレスト取得用
 
 # -------------------------------
 # 1. 1時間足ローソク足データ取得 (Klines)
@@ -11,11 +11,7 @@ from pybit.unified_trading import HTTP  # 資金調達率、ロングショー�
 def fetch_klines(symbol="BTCUSDT", category="linear", interval="60",
                  total_days=60, limit=1000,
                  url="https://api.bybit.com/v5/market/kline"):
-    '''
-    指定期間(total_days)分の1時間足ローソク足データをページング対応で取得する関数。
-    APIリクエストごとにログを出力する。
-    '''
-    # あとで非推奨になったutcnowの代わりを調べておくこと
+    '''指定期間(total_days)分の1時間足ローソク足データをページング対応で取得する関数'''
     end_time = datetime.utcnow()
     start_time = end_time - timedelta(days=total_days)
     end_timestamp = int(end_time.timestamp() * 1000)
@@ -52,7 +48,7 @@ def fetch_klines(symbol="BTCUSDT", category="linear", interval="60",
             print(f"[HOURLY KLINE] ページング更新できず (current_start={current_start}, new_start={new_start})。")
             break
         current_start = new_start
-        time.sleep(1)  # レートリミット対策
+        time.sleep(1)
     return all_data
 
 # -------------------------------
@@ -61,9 +57,7 @@ def fetch_klines(symbol="BTCUSDT", category="linear", interval="60",
 def fetch_daily_klines(symbol="BTCUSDT", category="linear", interval="D",
                          total_days=60, limit=1000,
                          url="https://api.bybit.com/v5/market/kline"):
-    '''
-    指定期間(total_days)分の日足ローソク足データをページング対応で取得する関数。
-    '''
+    '''指定期間(total_days)分の日足ローソク足データをページング対応で取得する関数'''
     end_time = datetime.utcnow()
     start_time = end_time - timedelta(days=total_days)
     end_timestamp = int(end_time.timestamp() * 1000)
@@ -100,16 +94,14 @@ def fetch_daily_klines(symbol="BTCUSDT", category="linear", interval="D",
             print(f"[DAILY KLINE] ページング更新できず (current_start={current_start}, new_start={new_start})。")
             break
         current_start = new_start
-        time.sleep(1)  # レートリミット対策
+        time.sleep(1)
     return all_data
 
 # -------------------------------
 # 3. テクニカル指標計算
 # -------------------------------
 def calculate_indicators(df):
-    '''
-    DataFrameに対して、ATR、ボリンジャーバンド、移動平均、RSI、EMAなどのテクニカル指標を計算し列として追加する関数。
-    '''
+    '''DataFrameに対して、ATR、ボリンジャーバンド、移動平均、RSI、EMAなどのテクニカル指標を計算し追加する関数'''
     # 型変換、時刻整形・ソート
     df["time"] = pd.to_datetime(df["time"].astype(int), unit="ms")
     df.sort_values("time", inplace=True)
@@ -165,10 +157,8 @@ def calculate_indicators(df):
 # -------------------------------
 def fetch_funding_rate_history_custom(symbol="BTCUSDT", category="linear",
                                       period="8h", total_days=60, limit=200):
-    '''
-    指定期間(total_days)分の資金調達率データを、8時間ごとのウィンドウでページング対応で取得する関数。
-    取得後、1時間足に合わせるための補間は後続の処理で行う前提。
-    '''
+    '''指定期間(total_days)分の資金調達率データを、8時間ごとのウィンドウでページング対応で取得する関数。
+    取得後、1時間足に合わせるための補間は後続の処理で行う前提。'''
     session = HTTP()  # pybitのセッション作成
     end_time = datetime.utcnow()
     start_time = end_time - timedelta(days=total_days)
@@ -217,16 +207,18 @@ def fetch_funding_rate_history_custom(symbol="BTCUSDT", category="linear",
     return records_all
 
 # -------------------------------
-# 5. ロングショートレシオ取得（1日足）
+# 5. オープンインタレストデータ取得（1時間足）
 # -------------------------------
-def fetch_long_short_ratio(start_ts, end_ts, period="1d", symbol="BTCUSDT",
-                           category="linear", limit=500):
-    '''
-    指定期間内のロングショートレシオデータを、1日単位でページング対応で取得する関数。
-    '''
-    session = HTTP()
+def fetch_open_interest_data(symbol="BTCUSDT", category="linear", interval="1h",
+                             total_days=60, limit=200):
+    '''指定期間(total_days)分の1時間足のオープンインタレストデータをページング対応で取得する関数'''
+    session = HTTP(testnet=False)
+    end_time = datetime.utcnow()
+    start_time = end_time - timedelta(days=total_days)
+    end_ts = int(end_time.timestamp() * 1000)
+    start_ts = int(start_time.timestamp() * 1000)
     records_all = []
-    window_ms = 24 * 60 * 60 * 1000  # 1日分
+    window_ms = 60 * 60 * 1000  # 1時間分のミリ秒
     current_start = start_ts
 
     while current_start < end_ts:
@@ -236,7 +228,7 @@ def fetch_long_short_ratio(start_ts, end_ts, period="1d", symbol="BTCUSDT",
             params = {
                 "category": category,
                 "symbol": symbol,
-                "period": period,
+                "intervalTime": interval,
                 "startTime": current_start,
                 "endTime": current_end,
                 "limit": limit
@@ -245,18 +237,18 @@ def fetch_long_short_ratio(start_ts, end_ts, period="1d", symbol="BTCUSDT",
                 params["cursor"] = cursor
             req_start_dt = datetime.fromtimestamp(current_start / 1000)
             req_end_dt = datetime.fromtimestamp(current_end / 1000)
-            print(f"[LSR] リクエスト: {req_start_dt.strftime('%Y-%m-%d %H:%M:%S')} ～ {req_end_dt.strftime('%Y-%m-%d %H:%M:%S')}")
+            print(f"[OPEN INTEREST] リクエスト: {req_start_dt.strftime('%Y-%m-%d %H:%M:%S')} ～ {req_end_dt.strftime('%Y-%m-%d %H:%M:%S')}")
             try:
-                response = session.get_long_short_ratio(**params)
+                response = session.get_open_interest(**params)
             except Exception as e:
-                print(f"[LSR] API呼び出し例外: {e}")
+                print(f"[OPEN INTEREST] API呼び出し例外: {e}")
                 break
             if response.get("retCode") != 0:
-                print("[LSR] APIエラー:", response.get("retMsg"))
+                print("[OPEN INTEREST] APIエラー:", response.get("retMsg"))
                 break
             result = response.get("result", {})
             records = result.get("list", [])
-            print(f"[LSR] {req_start_dt.strftime('%Y-%m-%d %H:%M:%S')} ～ {req_end_dt.strftime('%Y-%m-%d %H:%M:%S')} : {len(records)} 件取得")
+            print(f"[OPEN INTEREST] {req_start_dt.strftime('%Y-%m-%d %H:%M:%S')} ～ {req_end_dt.strftime('%Y-%m-%d %H:%M:%S')} : {len(records)} 件取得")
             records_all.extend(records)
             cursor = result.get("nextPageCursor")
             if not cursor:
@@ -271,11 +263,10 @@ def fetch_long_short_ratio(start_ts, end_ts, period="1d", symbol="BTCUSDT",
 # -------------------------------
 def main():
     '''
-    1時間足と日足、資金調達率（8時間ごと）のデータを取得し、テクニカル指標計算とmerge_asofによる統合、
-    線形補間を行って最終的に1時間単位のデータセットとしてCSVに出力する。
+    1時間足と日足、及び8時間ごとの資金調達率を取得し、テクニカル指標計算およびmerge_asofや線形補間で統合、
+    1時間単位の最終データセットとしてCSVに出力する。
     '''
-    # パラメータ設定
-    total_days = 60  # 60日分
+    total_days = 60  # 60日分のデータ
     symbol = "BTCUSDT"
     
     # Step1: 1時間足データの取得とテクニカル指標計算
@@ -311,7 +302,7 @@ def main():
     df_merged.drop(columns=["date"], inplace=True)
     print("日足データの拡張完了。")
     
-    # Step4: 資金調達率データの取得 & 補間
+    # Step4: 資金調達率データの取得 & 補間（8時間ごと→1時間足へ）
     print("資金調達率データ取得中...")
     end_ts = int(datetime.utcnow().timestamp() * 1000)
     start_ts = int((datetime.utcnow() - timedelta(days=total_days)).timestamp() * 1000)
@@ -328,13 +319,29 @@ def main():
         print("資金調達率データが取得できませんでした。")
         df_funding_hourly = pd.DataFrame(columns=["time", "fundingRate"])
     
-    # Step5: 1時間足＋日足拡張データと資金調達率データをマージ
+    # Step5: オープンインタレストデータの取得（1時間足）
+    print("オープンインタレストデータ取得中...")
+    oi_records = fetch_open_interest_data(symbol=symbol, total_days=total_days)
+    if oi_records:
+        df_oi = pd.DataFrame(oi_records)
+        df_oi["time"] = pd.to_datetime(df_oi["timestamp"].astype(int), unit="ms")
+        df_oi.drop_duplicates(subset=["time"], inplace=True)
+        df_oi = df_oi[["time", "openInterest"]]
+        print("オープンインタレストデータ取得完了。")
+    else:
+        print("オープンインタレストデータが取得できませんでした。")
+        df_oi = pd.DataFrame(columns=["time", "openInterest"])
+    
+    # Step6: 1時間足＋日足拡張データと資金調達率データをマージ
     df_merged = df_merged.sort_values("time")
     df_funding_hourly = df_funding_hourly.sort_values("time")
     print("merge_asofで資金調達率データをマージ中...")
     df_final = pd.merge_asof(df_merged, df_funding_hourly, on="time", direction="backward")
     
-    # Step6: 統合データをCSVに出力
+    # Step7: 最終的にオープンインタレストデータもマージ（1時間足を基準）
+    df_final = pd.merge_asof(df_final.sort_values("time"), df_oi.sort_values("time"), on="time", direction="backward")
+    
+    # Step8: 統合データをCSVに出力
     output_file = "merged_dataset.csv"
     df_final.to_csv(output_file, index=False)
     print(f"最終統合データが '{output_file}' に保存されました。")
