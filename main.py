@@ -9,6 +9,7 @@ from pybit.unified_trading import HTTP  # 資金調達率、オープンイン�
 # requestsライブラリとPythonのver3.10以上のバージョンは互換性がなかったような気がするので要確認
 # 具体的にはUbuntuで実行時に証明書エラーが発生していた気がする
 
+# このスクリプトの場合、CSVの最初の数行一部が欠損するので注意すること
 # -------------------------------
 # 1. 1時間足ローソク足データ取得 (Klines)
 # -------------------------------
@@ -314,8 +315,9 @@ def main():
     funding_records = fetch_funding_rate_history_custom(symbol=symbol, total_days=total_days)
     if funding_records:
         df_funding = pd.DataFrame(funding_records)
-        # 修正：フィールド名は "fundingRateTimestamp" を使用する
+        # 修正：フィールド名は "fundingRateTimestamp" を使用し、fundingRateも数値に変換
         df_funding["time"] = pd.to_datetime(df_funding["fundingRateTimestamp"].astype(int), unit="ms")
+        df_funding["fundingRate"] = pd.to_numeric(df_funding["fundingRate"], errors="coerce")
         df_funding.drop_duplicates(subset=["time"], inplace=True)
         df_funding.set_index("time", inplace=True)
         # 1時間足にリサンプリングし、線形補間
