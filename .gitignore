@@ -177,3 +177,7 @@ data_with_indicators_daily.csv
 data_with_indicators.csv
 raw_data_daily.csv
 merged_dataset.csv
+feature_importances.png
+Figure_1.png
+lgb_model.txt
+merged_dataset_with_return.csv
