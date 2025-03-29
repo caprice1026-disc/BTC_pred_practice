@@ -32,7 +32,7 @@ model.fit(X_train, y_train)
 # テストデータで予測
 y_pred = model.predict(X_test)
 
-# 予測精度の評価：MSEからRMSEを算出
+# 予測精度の評価：まずMSEを計算し、RMSEを算出
 mse = mean_squared_error(y_test, y_pred)
 rmse = mse ** 0.5
 r2 = r2_score(y_test, y_pred)
@@ -40,9 +40,7 @@ r2 = r2_score(y_test, y_pred)
 print("RMSE:", rmse)
 print("R²:", r2)
 
-# -------------------------------
 # 特徴量の重要度の表示＆保存
-# -------------------------------
 importances = model.feature_importances_
 feature_importances = pd.DataFrame({'Feature': feature_cols, 'Importance': importances})
 feature_importances = feature_importances.sort_values(by='Importance', ascending=False)
@@ -56,8 +54,13 @@ plt.ylabel('Feature')
 plt.savefig("feature_importances.png", dpi=300, bbox_inches='tight')
 plt.show()
 
-# -------------------------------
-# モデルの保存（boosterを利用）
-# -------------------------------
-model.booster_.save_model('lgb_model.txt')
+# モデルの保存
+model.save_model('lgb_model.txt')
 print("モデルは 'lgb_model.txt' に保存されました。")
+# 予測結果をCSVファイルとして保存
+predictions_df = pd.DataFrame({'time': df['time'].iloc[split_index:], 'actual': y_test, 'predicted': y_pred})
+predictions_df.to_csv('predictions.csv', index=False)
+print("予測結果は 'predictions.csv' に保存されました。")
+# 予測結果の可視化
+plt.figure(figsize=(12, 6))
+plt.plot(predictions_df['time'], predictions_df['actual'], label='Actual', color='blue')
